@@ -305,6 +305,9 @@ def inject_custom_css():
         
         /* Ocultar / Mostrar vistas según tamaño de pantalla */
         @media (max-width: 768px) {
+            .stApp {
+                zoom: 0.9 !important; /* Zoom general del 10% en celular para dar sensación de alejamiento */
+            }
             .volvo-header {
                 padding: 15px 20px !important;
                 margin-bottom: 15px !important;

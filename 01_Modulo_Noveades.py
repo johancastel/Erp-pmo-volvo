@@ -10,9 +10,9 @@ try:
 except Exception:
     pass
 
-# Determine sidebar state: collapse on mobile when a submodule is selected (Ingresar Novedades or Exportar Datos)
+# Determine sidebar state: collapse when a submodule is selected (Ingresar Novedades, Atender Novedades or Exportar Datos)
 sidebar_state = "expanded"
-if is_mobile and st.session_state.get("menu_actual_radio") is not None:
+if st.session_state.get("menu_actual_radio") is not None:
     sidebar_state = "collapsed"
 
 # Streamlit Page configuration must be the first command executed

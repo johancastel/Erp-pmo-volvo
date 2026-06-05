@@ -35,7 +35,17 @@ def main():
     import time
     timestamp = time.time()
     menu_actual = st.session_state.get("menu_actual_radio")
-    hide_sidebar_trigger = menu_actual is not None
+    
+    # Track previous menu selection to trigger auto-collapse only when selection changes
+    if "previous_menu" not in st.session_state:
+        st.session_state.previous_menu = None
+        
+    hide_sidebar_trigger = False
+    if menu_actual is not None and menu_actual != st.session_state.previous_menu:
+        hide_sidebar_trigger = True
+        st.session_state.previous_menu = menu_actual
+    elif menu_actual is None:
+        st.session_state.previous_menu = None
 
     components.html(f"""
         <script>
@@ -76,45 +86,63 @@ def main():
             }} catch (e) {{
                 console.error("Error setting up button blur listeners:", e);
             }}
-    
-            // Auto-colapsar barra lateral en celular si hay un submódulo activo
-            const shouldHide = {str(hide_sidebar_trigger).lower()};
-            if (shouldHide) {{
+            // Auto-colapsar barra lateral
+            const collapseSidebar = () => {{
                 try {{
                     const topWin = window.parent || window;
                     const doc = topWin.document;
                     
-                    const collapseSidebarMobile = () => {{
-                        // 1. Intentar hacer clic en el overlay de fondo (sólo visible si la barra está abierta en celular)
-                        const overlay = doc.querySelector('[data-testid="stSidebarUserCloseOverlay"]');
-                        if (overlay) {{
-                            overlay.click();
+                    // 1. Intentar hacer clic en el overlay de fondo (sólo visible si la barra está abierta en celular)
+                    const overlay = doc.querySelector('[data-testid="stSidebarUserCloseOverlay"]');
+                    if (overlay) {{
+                        overlay.click();
+                        return true;
+                    }}
+                    
+                    // 2. Intentar hacer clic en el botón de colapso de la barra lateral si está expandida
+                    const sidebar = doc.querySelector('section[data-testid="stSidebar"], [data-testid="stSidebar"]');
+                    if (sidebar && sidebar.getAttribute('data-collapsed') === 'false') {{
+                        const collapseBtn = doc.querySelector('[data-testid="stSidebarCollapseButton"]');
+                        if (collapseBtn) {{
+                            collapseBtn.click();
                             return true;
                         }}
-                        
-                        // 2. Fallback: Intentar hacer clic en el botón de colapso de la barra lateral
-                        const width = topWin.innerWidth || window.innerWidth || doc.documentElement.clientWidth;
-                        if (width <= 992) {{
-                            const sidebar = doc.querySelector('section[data-testid="stSidebar"], [data-testid="stSidebar"]');
-                            if (sidebar && (sidebar.clientWidth > 0 || sidebar.offsetWidth > 0)) {{
-                                const collapseBtn = doc.querySelector('[data-testid="stSidebarCollapseButton"]');
-                                if (collapseBtn) {{
-                                    collapseBtn.click();
-                                    return true;
-                                }}
-                            }}
-                        }}
-                        return false;
-                    }};
-    
-                    // Intentar en múltiples intervalos incondicionales para asegurar la ejecución tras renderizado de React
-                    setTimeout(collapseSidebarMobile, 150);
-                    setTimeout(collapseSidebarMobile, 400);
-                    setTimeout(collapseSidebarMobile, 750);
-                    setTimeout(collapseSidebarMobile, 1200);
+                    }}
                 }} catch (e) {{
-                    console.error("Error auto-collapsing sidebar:", e);
+                    console.error("Error in collapseSidebar:", e);
                 }}
+                return false;
+            }};
+    
+            const shouldHide = {str(hide_sidebar_trigger).lower()};
+            if (shouldHide) {{
+                // Intentar en múltiples intervalos incondicionales para asegurar la ejecución tras renderizado de React
+                setTimeout(collapseSidebar, 150);
+                setTimeout(collapseSidebar, 400);
+                setTimeout(collapseSidebar, 750);
+                setTimeout(collapseSidebar, 1200);
+            }}
+            
+            // Client-side listener to collapse the sidebar immediately when a sidebar menu option is clicked
+            try {{
+                const setupSidebarRadioListeners = () => {{
+                    const sidebarRadioOptions = doc.querySelectorAll('section[data-testid="stSidebar"] div[data-testid="stRadio"] label');
+                    sidebarRadioOptions.forEach(option => {{
+                        if (!option.dataset.hasCollapseListener) {{
+                            option.dataset.hasCollapseListener = "true";
+                            option.addEventListener('click', () => {{
+                                // Close the sidebar after a very short delay to let the click action propagate
+                                setTimeout(collapseSidebar, 50);
+                            }});
+                        }}
+                    }});
+                }};
+                
+                setupSidebarRadioListeners();
+                const sidebarObserver = new MutationObserver(setupSidebarRadioListeners);
+                sidebarObserver.observe(doc.body, {{ childList: true, subtree: true }});
+            }} catch (e) {{
+                console.error("Error setting up sidebar radio listeners:", e);
             }}
         </script>
         """, height=0)

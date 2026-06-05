@@ -75,7 +75,7 @@ El código del proyecto se encuentra estructurado en capas para separar la inter
 * **Mejoras UX mediante Javascript Inyectado**:
   1. **Solución al bug de Streamlit (Input Focus)**: Fuerza un evento `blur()` en las cajas de texto al hacer clic en cualquier botón. Esto previene que se omitan los cambios no guardados.
   2. **Limpieza del Prefijo "Add "**: Elimina de forma dinámica las etiquetas de Streamlit en selecciones interactivas.
-  3. **Auto-colapso en Celular**: Contrae de manera automática el menú lateral cuando un técnico selecciona un formulario en pantallas móviles, optimizando el área útil de trabajo.
+  3. Auto-colapso del Menú Lateral: Contrae de manera automática el menú lateral cuando se selecciona cualquiera de los submódulos ("Ingresar Novedades", "Atender Novedades" o "Exportar Datos"), tanto en pantallas móviles como de escritorio, maximizando el espacio de trabajo disponible.
 
 ### 📋 3. Formularios Técnicos Especializados
 Las novedades están estructuradas y segmentadas en tres tipos de cuestionarios:
