@@ -3,7 +3,7 @@ import datetime
 import pandas as pd
 import streamlit as st
 from src.config.settings import PATIOS_CONFIG
-from src.styles import draw_metric_card
+from src.styles import draw_metric_card, draw_kpi_group
 from src.database.repositories.novedades_repository import NovedadesRepository
 from src.services.export_service import ExportService
 
@@ -324,13 +324,13 @@ def render_export_page():
     
     # Render KPI metrics cards
     with kpis_placeholder:
-        kpi1, kpi2, kpi3 = st.columns(3)
-        with kpi1:
-            draw_metric_card(total_unique_vehicles, "Total Flota", border_color="#005b94")
-        with kpi2:
-            draw_metric_card(con_fugas, "Con Fugas Encontrados", border_color="#d9534f", text_color="#d9534f")
-        with kpi3:
-            draw_metric_card(con_obs, "Con Observaciones / Reportes", border_color="#f0ad4e", text_color="#f0ad4e")
+        patio_lbl_val = "TODOS" if patio_select == "Todos los Patios" else patio_select.upper()
+        draw_kpi_group([
+            {"val": total_unique_vehicles, "lbl": "Total Flota", "border_color": "#005b94"},
+            {"val": patio_lbl_val, "lbl": "Patio Filtrado", "border_color": "#007ac5", "value_style": "font-size:16px; padding: 11px 0;"},
+            {"val": con_fugas, "lbl": "Con Fugas", "border_color": "#d9534f", "text_color": "#d9534f"},
+            {"val": con_obs, "lbl": "Con Observaciones", "border_color": "#f0ad4e", "text_color": "#f0ad4e"}
+        ])
 
     # Preview section removed as requested
 

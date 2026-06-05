@@ -4,7 +4,7 @@ import time
 import pandas as pd
 import streamlit as st
 from src.config.settings import PATIOS_CONFIG
-from src.styles import draw_metric_card
+from src.styles import draw_metric_card, draw_kpi_group
 from src.database.repositories.novedades_repository import NovedadesRepository
 from src.constants.choices import TECNICOS_OPCIONES
 
@@ -297,8 +297,6 @@ def render_atender_novedades_page():
     """
     Renders the 'Atender Novedades' interactive dashboard and correction interface.
     """
-    st.markdown('<h3 style="color: white; font-weight: 700; margin-bottom: 20px;">Novedades</h3>', unsafe_allow_html=True)
-    
     # 1. Initialize repository and load raw novelties
     repository = NovedadesRepository()
     try:
@@ -349,104 +347,121 @@ def render_atender_novedades_page():
 
     # ==================== VISTA GLOBAL (DASHBOARD) ====================
     if st.session_state.atender_selected_patio is None:
+        st.subheader("Centro de Operaciones")
+        st.write("Selecciona el patio a gestionar novedades:")
+        
         if pending_count == 0:
             st.success("🟢 **¡Felicidades!** No hay novedades pendientes por atender en el sistema en este momento.")
         else:
-            col_chart1, col_chart2, col_chart3 = st.columns(3)
-            
-            with col_chart1:
-                st.markdown('<h4 style="color: white; font-weight: 600; font-size: 16px; margin-bottom: 10px;">Novedades Pendientes por Patio</h4>', unsafe_allow_html=True)
-                with st.container(key="chart_card_patio"):
-                    # Count by patio and show
-                    patio_counts = df_pending['patio'].value_counts()
-                    draw_bar_chart_with_labels(patio_counts, "Patio", "Novedades", "#ffa500")
-                    
-            with col_chart2:
-                st.markdown('<h4 style="color: white; font-weight: 600; font-size: 16px; margin-bottom: 10px;">Novedades Pendientes por Criticidad</h4>', unsafe_allow_html=True)
-                with st.container(key="chart_card_criticidad"):
-                    # Clean and order criticality to ensure '1', '2', '3' are always shown
-                    df_pending_crit = df_pending.copy()
-                    
-                    def clean_criticidad(val):
-                        if val is None or pd.isna(val):
-                            return 'SIN CRITICIDAD'
-                        try:
-                            num = float(val)
-                            if num.is_integer():
-                                return str(int(num))
-                            return str(num)
-                        except (ValueError, TypeError):
-                            s = str(val).strip().upper()
-                            return s if s else 'SIN CRITICIDAD'
-                            
-                    df_pending_crit['criticidad_clean'] = df_pending_crit['criticidad'].apply(clean_criticidad)
-                    crit_counts = df_pending_crit['criticidad_clean'].value_counts()
-                    
-                    logical_order = ['1', '2', '3']
-                    all_indices = logical_order + [i for i in crit_counts.index if i not in logical_order]
-                    crit_counts = crit_counts.reindex(all_indices).fillna(0).astype(int)
-                    
-                    draw_bar_chart_with_labels(crit_counts, "Criticidad", "Novedades", "#d9534f")
+            with st.expander("Estadísticas y Gráficas de Novedades", expanded=False):
+                col_chart1, col_chart2, col_chart3 = st.columns(3)
+                
+                with col_chart1:
+                    st.markdown('<h4 style="color: white; font-weight: 600; font-size: 16px; margin-bottom: 10px;">Novedades Pendientes por Patio</h4>', unsafe_allow_html=True)
+                    with st.container(key="chart_card_patio"):
+                        # Count by patio and show
+                        patio_counts = df_pending['patio'].value_counts()
+                        draw_bar_chart_with_labels(patio_counts, "Patio", "Novedades", "#ffa500")
+                        
+                with col_chart2:
+                    st.markdown('<h4 style="color: white; font-weight: 600; font-size: 16px; margin-bottom: 10px;">Novedades Pendientes por Criticidad</h4>', unsafe_allow_html=True)
+                    with st.container(key="chart_card_criticidad"):
+                        # Clean and order criticality to ensure '1', '2', '3' are always shown
+                        df_pending_crit = df_pending.copy()
+                        
+                        def clean_criticidad(val):
+                            if val is None or pd.isna(val):
+                                return 'SIN CRITICIDAD'
+                            try:
+                                num = float(val)
+                                if num.is_integer():
+                                    return str(int(num))
+                                return str(num)
+                            except (ValueError, TypeError):
+                                s = str(val).strip().upper()
+                                return s if s else 'SIN CRITICIDAD'
+                                
+                        df_pending_crit['criticidad_clean'] = df_pending_crit['criticidad'].apply(clean_criticidad)
+                        crit_counts = df_pending_crit['criticidad_clean'].value_counts()
+                        
+                        logical_order = ['1', '2', '3']
+                        all_indices = logical_order + [i for i in crit_counts.index if i not in logical_order]
+                        crit_counts = crit_counts.reindex(all_indices).fillna(0).astype(int)
+                        
+                        draw_bar_chart_with_labels(crit_counts, "Criticidad", "Novedades", "#d9534f")
 
-            with col_chart3:
-                st.markdown('<h4 style="color: white; font-weight: 600; font-size: 16px; margin-bottom: 10px;">Novedades Pendientes por Grupo Función</h4>', unsafe_allow_html=True)
-                with st.container(key="chart_card_grupo"):
-                    # Clean and count by functional group
-                    df_pending_grupo = df_pending.copy()
-                    df_pending_grupo['grupo_clean'] = df_pending_grupo['grupo_funcion'].fillna('SIN GRUPO').str.upper().str.strip()
-                    grupo_counts = df_pending_grupo['grupo_clean'].value_counts()
-                    
-                    draw_bar_chart_with_labels(grupo_counts, "Grupo Función", "Novedades", "#005b94")
-                    
-            st.write("")
-            
-            # Historical trend chart block
-            st.markdown('<h4 style="color: white; font-weight: 600; font-size: 16px; margin-top: 15px; margin-bottom: 10px;">Historial de Novedades Registradas en el Tiempo</h4>', unsafe_allow_html=True)
-            with st.container(key="chart_card_trend"):
-                col_t1, col_t2 = st.columns([1.5, 8.5])
-                with col_t1:
-                    trend_mode = st.radio(
-                        "Agrupar por:",
-                        options=["Meses", "Semanas"],
-                        key="trend_grouping_mode",
-                        horizontal=False
-                    )
-                with col_t2:
-                    df_raw['fecha_dt'] = pd.to_datetime(df_raw['fecha_novedad'], errors='coerce')
-                    df_time = df_raw.dropna(subset=['fecha_dt'])
-                    
-                    if df_time.empty:
-                        st.info("No hay datos de fecha válidos para mostrar el histórico.")
-                    else:
-                        if trend_mode == "Meses":
-                            df_time['periodo'] = df_time['fecha_dt'].dt.to_period('M').astype(str)
-                            period_lbl = "Mes"
+                with col_chart3:
+                    st.markdown('<h4 style="color: white; font-weight: 600; font-size: 16px; margin-bottom: 10px;">Novedades Pendientes por Grupo Función</h4>', unsafe_allow_html=True)
+                    with st.container(key="chart_card_grupo"):
+                        # Clean and count by functional group
+                        df_pending_grupo = df_pending.copy()
+                        df_pending_grupo['grupo_clean'] = df_pending_grupo['grupo_funcion'].fillna('SIN GRUPO').str.upper().str.strip()
+                        grupo_counts = df_pending_grupo['grupo_clean'].value_counts()
+                        
+                        draw_bar_chart_with_labels(grupo_counts, "Grupo Función", "Novedades", "#005b94")
+                        
+                st.write("")
+                
+                # Historical trend chart block
+                st.markdown('<h4 style="color: white; font-weight: 600; font-size: 16px; margin-top: 15px; margin-bottom: 10px;">Historial de Novedades Registradas en el Tiempo</h4>', unsafe_allow_html=True)
+                with st.container(key="chart_card_trend"):
+                    col_t1, col_t2 = st.columns([1.5, 8.5])
+                    with col_t1:
+                        trend_mode = st.radio(
+                            "Agrupar por:",
+                            options=["Meses", "Semanas"],
+                            key="trend_grouping_mode",
+                            horizontal=False
+                        )
+                    with col_t2:
+                        df_raw['fecha_dt'] = pd.to_datetime(df_raw['fecha_novedad'], errors='coerce')
+                        df_time = df_raw.dropna(subset=['fecha_dt'])
+                        
+                        if df_time.empty:
+                            st.info("No hay datos de fecha válidos para mostrar el histórico.")
                         else:
-                            df_time['periodo'] = df_time['fecha_dt'].dt.to_period('W').apply(lambda r: r.start_time.strftime('%Y-%m-%d'))
-                            period_lbl = "Semana (Inicia)"
-                        
-                        trend_counts = df_time.groupby('periodo').size().sort_index()
-                        draw_trend_chart(trend_counts, period_lbl, "#007ac5")
-                        
+                            if trend_mode == "Meses":
+                                df_time['periodo'] = df_time['fecha_dt'].dt.to_period('M').astype(str)
+                                period_lbl = "Mes"
+                            else:
+                                df_time['periodo'] = df_time['fecha_dt'].dt.to_period('W').apply(lambda r: r.start_time.strftime('%Y-%m-%d'))
+                                period_lbl = "Semana (Inicia)"
+                            
+                            trend_counts = df_time.groupby('periodo').size().sort_index()
+                            draw_trend_chart(trend_counts, period_lbl, "#007ac5")
+                            
+                st.write("")
             st.write("")
             
 
         # Interactive Patios Grid for Entering/Drill-down
-        st.markdown('<h4 style="color: white; font-weight: 600; font-size: 16px; margin-top: 25px; margin-bottom: 15px;">Patio</h4>', unsafe_allow_html=True)
-        patios_keys = list(PATIOS_CONFIG.keys())
+        patios_order = ["20 DE JULIO", "CALLE 191", "CONEJERA", "EEMB", "ENGATIVA", "GAVIOTAS", "SUBA"]
         
-        # Divide into rows of 4 columns
-        col_p1, col_p2, col_p3, col_p4 = st.columns(4)
-        col_p5, col_p6, col_p7, _ = st.columns(4)
-        p_cols = [col_p1, col_p2, col_p3, col_p4, col_p5, col_p6, col_p7]
-        
-        for idx, p_name in enumerate(patios_keys):
-            p_pending_cnt = len(df_pending[df_pending['patio'] == p_name])
-            with p_cols[idx]:
-                btn_label = f"🏢 {p_name}\n({p_pending_cnt} Pendientes)"
-                if st.button(btn_label, key=f"btn_patio_atender_{p_name}", use_container_width=True):
-                    st.session_state.atender_selected_patio = p_name
+        col1, col2, col3, col4 = st.columns(4)
+        for i, patio_name in enumerate(patios_order[:4]):
+            p_pending_cnt = len(df_pending[df_pending['patio'] == patio_name])
+            with [col1, col2, col3, col4][i]:
+                st.markdown('<div class="patio-card-container">', unsafe_allow_html=True)
+                btn_label = f"{patio_name}\n({p_pending_cnt} Pendientes)"
+                clean_key = f"btn_patio_atender_{patio_name.replace(' ', '_').lower()}"
+                if st.button(btn_label, key=clean_key, use_container_width=True):
+                    st.session_state.atender_selected_patio = patio_name
                     st.rerun()
+                st.markdown('</div>', unsafe_allow_html=True)
+                    
+        col5, col6, col7 = st.columns(3)
+        for i, patio_name in enumerate(patios_order[4:]):
+            p_pending_cnt = len(df_pending[df_pending['patio'] == patio_name])
+            with [col5, col6, col7][i]:
+                st.markdown('<div class="patio-card-container">', unsafe_allow_html=True)
+                btn_label = f"{patio_name}\n({p_pending_cnt} Pendientes)"
+                clean_key = f"btn_patio_atender_{patio_name.replace(' ', '_').lower()}"
+                if st.button(btn_label, key=clean_key, use_container_width=True):
+                    st.session_state.atender_selected_patio = patio_name
+                    st.rerun()
+                st.markdown('</div>', unsafe_allow_html=True)
+                
+        st.markdown("<div style='height: 38px;'></div>", unsafe_allow_html=True)
 
     # ==================== VISTA DE PATIO (DRILL-DOWN) ====================
     else:
@@ -457,7 +472,7 @@ def render_atender_novedades_page():
             st.session_state.atender_selected_patio = None
             st.rerun()
             
-        st.markdown(f'<h3 style="color: white; font-weight: 700; margin-top: 10px;">Patio: {selected_patio}</h3>', unsafe_allow_html=True)
+        st.markdown(f'<h3 style="color: white; font-weight: 700; margin-top: 10px;">{selected_patio}</h3>', unsafe_allow_html=True)
         
         df_pending_patio = df_pending[df_pending['patio'] == selected_patio]
         pending_patio_count = len(df_pending_patio)
@@ -465,47 +480,72 @@ def render_atender_novedades_page():
         if pending_patio_count == 0:
             st.success(f"🟢 **¡Todo al día!** No hay novedades pendientes por atender en el patio **{selected_patio}**.")
         else:
-            # Layout local stats
-            col_p_kpi1, col_p_kpi2 = st.columns([1.5, 2.5])
-            with col_p_kpi1:
-                draw_metric_card(str(pending_patio_count), f"Pendientes en {selected_patio}", border_color="#ffa500", text_color="#ffa500")
+            # Clean criticidad values to strings robustly to calculate KPIs
+            def clean_crit_kpi(val):
+                if val is None or pd.isna(val):
+                    return 'SIN CRITICIDAD'
+                try:
+                    num = float(val)
+                    if num.is_integer():
+                        return str(int(num))
+                    return str(num)
+                except (ValueError, TypeError):
+                    s = str(val).strip().upper()
+                    return s if s else 'SIN CRITICIDAD'
+
+            df_pending_patio_kpi = df_pending_patio.copy()
+            df_pending_patio_kpi['criticidad_clean'] = df_pending_patio_kpi['criticidad'].apply(clean_crit_kpi)
+            
+            crit_3_count = len(df_pending_patio_kpi[df_pending_patio_kpi['criticidad_clean'] == '3'])
+            crit_2_count = len(df_pending_patio_kpi[df_pending_patio_kpi['criticidad_clean'] == '2'])
+            crit_1_count = len(df_pending_patio_kpi[df_pending_patio_kpi['criticidad_clean'] == '1'])
+
+            # Render patio KPIs in a 4-card group
+            draw_kpi_group([
+                {"val": pending_patio_count, "lbl": "Total Novedades", "border_color": "#005b94"},
+                {"val": crit_3_count, "lbl": "Criticidad 3", "border_color": "#d9534f", "text_color": "#d9534f"},
+                {"val": crit_2_count, "lbl": "Criticidad 2", "border_color": "#ffa500", "text_color": "#ffa500"},
+                {"val": crit_1_count, "lbl": "Criticidad 1", "border_color": "#ffeb3b", "text_color": "#ffeb3b"}
+            ])
+            st.write("")
                 
             # Local charts layout
-            col_pl_chart1, col_pl_chart2, col_pl_chart3 = st.columns(3)
-            with col_pl_chart1:
-                st.markdown('<h5 style="color: white; font-weight: 600; font-size: 14px; margin-bottom: 5px;">Criticidad en este Patio</h5>', unsafe_allow_html=True)
-                with st.container(key="chart_card_local_crit"):
-                    df_pending_patio_crit = df_pending_patio.copy()
+            with st.expander("Estadísticas y Gráficas del Patio", expanded=False):
+                col_pl_chart1, col_pl_chart2, col_pl_chart3 = st.columns(3)
+                with col_pl_chart1:
+                    st.markdown('<h5 style="color: white; font-weight: 600; font-size: 14px; margin-bottom: 5px;">Criticidad en este Patio</h5>', unsafe_allow_html=True)
+                    with st.container(key="chart_card_local_crit"):
+                        df_pending_patio_crit = df_pending_patio.copy()
+                        
+                        def clean_criticidad_local(val):
+                            if val is None or pd.isna(val):
+                                return 'SIN CRITICIDAD'
+                            try:
+                                num = float(val)
+                                if num.is_integer():
+                                    return str(int(num))
+                                return str(num)
+                            except (ValueError, TypeError):
+                                s = str(val).strip().upper()
+                                return s if s else 'SIN CRITICIDAD'
+                                
+                        df_pending_patio_crit['criticidad_clean'] = df_pending_patio_crit['criticidad'].apply(clean_criticidad_local)
+                        crit_local = df_pending_patio_crit['criticidad_clean'].value_counts()
+                        
+                        logical_order = ['1', '2', '3']
+                        all_indices = logical_order + [i for i in crit_local.index if i not in logical_order]
+                        crit_local = crit_local.reindex(all_indices).fillna(0).astype(int)
+                        draw_bar_chart_with_labels(crit_local, "Criticidad", "Novedades", "#d9534f")
                     
-                    def clean_criticidad_local(val):
-                        if val is None or pd.isna(val):
-                            return 'SIN CRITICIDAD'
-                        try:
-                            num = float(val)
-                            if num.is_integer():
-                                return str(int(num))
-                            return str(num)
-                        except (ValueError, TypeError):
-                            s = str(val).strip().upper()
-                            return s if s else 'SIN CRITICIDAD'
-                            
-                    df_pending_patio_crit['criticidad_clean'] = df_pending_patio_crit['criticidad'].apply(clean_criticidad_local)
-                    crit_local = df_pending_patio_crit['criticidad_clean'].value_counts()
+                with col_pl_chart2:
+                    st.markdown('<h5 style="color: white; font-weight: 600; font-size: 14px; margin-bottom: 5px;">Móviles con más Novedades</h5>', unsafe_allow_html=True)
+                    with st.container(key="chart_card_local_movil"):
+                        draw_mobile_novedades_stacked_chart(df_pending_patio)
                     
-                    logical_order = ['1', '2', '3']
-                    all_indices = logical_order + [i for i in crit_local.index if i not in logical_order]
-                    crit_local = crit_local.reindex(all_indices).fillna(0).astype(int)
-                    draw_bar_chart_with_labels(crit_local, "Criticidad", "Novedades", "#d9534f")
-                
-            with col_pl_chart2:
-                st.markdown('<h5 style="color: white; font-weight: 600; font-size: 14px; margin-bottom: 5px;">Móviles con más Novedades</h5>', unsafe_allow_html=True)
-                with st.container(key="chart_card_local_movil"):
-                    draw_mobile_novedades_stacked_chart(df_pending_patio)
-                
-            with col_pl_chart3:
-                st.markdown('<h5 style="color: white; font-weight: 600; font-size: 14px; margin-bottom: 5px;">Grupo Función en este Patio</h5>', unsafe_allow_html=True)
-                with st.container(key="chart_card_local_grupo"):
-                    draw_grupo_funcion_scroll_chart(df_pending_patio)
+                with col_pl_chart3:
+                    st.markdown('<h5 style="color: white; font-weight: 600; font-size: 14px; margin-bottom: 5px;">Grupo Función en este Patio</h5>', unsafe_allow_html=True)
+                    with st.container(key="chart_card_local_grupo"):
+                        draw_grupo_funcion_scroll_chart(df_pending_patio)
                 
         # "Atender Novedades" Form card (styled with fine white border)
         st.markdown('<h4 style="color: white; font-weight: 700; margin-top: 25px; margin-bottom: 10px;">Atender Novedades</h4>', unsafe_allow_html=True)

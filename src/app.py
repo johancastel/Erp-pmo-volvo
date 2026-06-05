@@ -178,18 +178,27 @@ def main():
                 st.image(bus_path, caption="Volvo Electric Bus - Innovación y Eficiencia", use_container_width=True)
         st.stop()
 
+    # Dynamic header title and subtitle based on menu option
+    if menu_actual == "Ingresar Novedades":
+        header_title = "MÓDULO DE NOVEDADES - INGRESAR NOVEDADES"
+        header_subtitle = "Volvo Group Colombia - Registro de novedades de vehículos"
+    elif menu_actual == "Atender Novedades":
+        header_title = "MÓDULO DE NOVEDADES - ATENDER NOVEDADES"
+        header_subtitle = "Volvo Group Colombia - Seguimiento y atención de novedades"
+    elif menu_actual == "Exportar Datos":
+        header_title = "MÓDULO DE NOVEDADES - EXPORTAR DATOS"
+        header_subtitle = "Volvo Group Colombia - Descarga de registros y reportes"
+    else:
+        header_title = "MÓDULO DE NOVEDADES - CONTROL DE FLOTA"
+        header_subtitle = "Volvo Group Colombia - Control Operativo de los móviles"
+
     # Renders Volvo Banner
     draw_volvo_header(
-        title="MÓDULO DE NOVEDADES - CONTROL DE FLOTA",
+        title=header_title,
         version="VERSION 1.1",
-        subtitle="Volvo Group Colombia - Control Operativo de los móviles"
+        subtitle=header_subtitle
     )
 
-    # Display active database feedback
-    if db_active == "MySQL":
-        st.success(f"🟢 **Base de Datos Activa:** MySQL Local en `{st.session_state.db_host}:{st.session_state.db_port}` (DB: `{st.session_state.db_name}`). Datos listos para reportes de BI.")
-    else:
-        st.warning("⚠️ **Base de Datos Activa:** SQLite Local (Archivo `erp_pmo.db`). No se detectó MySQL activo en localhost:3306. Usando base de datos interna de respaldo.")
     st.write("")
 
     if menu_actual == "Ingresar Novedades":

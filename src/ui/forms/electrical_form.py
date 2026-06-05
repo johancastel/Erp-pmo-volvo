@@ -129,19 +129,33 @@ def render_electrical_form(row, first_idx, row_data):
 
         st.markdown("<h5 style='color: #ffffff; margin-top:20px; margin-bottom: 5px; font-weight:600;'>Actividades Adicionales y Observaciones Eléctricas</h5>", unsafe_allow_html=True)
         for idx_num, (index_df, vehicle_row) in enumerate(row_data.iterrows()):
-            # Detalles Eléctrico text input
+            # Detalles Eléctrico selectbox (allow writing freely)
             current_detalles_elec = vehicle_row.get('Detalles Eléctrico', '')
             if current_detalles_elec is None:
                 current_detalles_elec = ""
-            txt_key_elec = f"detalles_txt_elec_mobile_{vehicle_row['Móvil']}_{index_df}"
+            else:
+                current_detalles_elec = str(current_detalles_elec).strip()
+                
+            sb_options = ["", "N/A"]
+            if current_detalles_elec and current_detalles_elec not in sb_options:
+                sb_options.append(current_detalles_elec)
+                
+            try:
+                sb_index = sb_options.index(current_detalles_elec)
+            except ValueError:
+                sb_index = 0
+                
+            sb_key_elec = f"detalles_sb_elec_mobile_{vehicle_row['Móvil']}_{index_df}"
             
-            st.text_input(
+            st.selectbox(
                 f"Actividad eléctrica ejecutada #{idx_num + 1}",
-                value=current_detalles_elec,
-                key=txt_key_elec,
-                placeholder="Escribir N/A si no se realiza alguna actividad",
+                options=sb_options,
+                index=sb_index,
+                key=sb_key_elec,
+                accept_new_options=True,
+                placeholder="Escribe la actividad o selecciona...",
                 on_change=MantenimientoService.on_detalles_elec_row_change,
-                args=(index_df, txt_key_elec)
+                args=(index_df, sb_key_elec)
             )
             
             # Observaciones Eléctrico selectbox
@@ -194,7 +208,7 @@ def render_electrical_form(row, first_idx, row_data):
             
         last_row_obs_elec = str(row_data.iloc[-1].get('Observaciones Eléctrico', '')).strip()
         btn_add_disabled_elec = not last_row_obs_elec
-        if st.button("➕ Agregar otra Actividad Eléctrica", key=f"add_row_btn_mobile_elec_{row['Móvil']}", use_container_width=True, disabled=btn_add_disabled_elec):
+        if st.button("Agregar otra Actividad/ Observación", key=f"add_row_btn_mobile_elec_{row['Móvil']}", use_container_width=True, disabled=btn_add_disabled_elec):
             new_df, success, msg = mantenimiento_service.add_electrical_activity(
                 st.session_state.df_master, row['Móvil'], st.session_state.modified_moviles
             )

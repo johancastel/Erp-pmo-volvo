@@ -195,19 +195,33 @@ def render_mechanical_form(row, first_idx, row_data):
 
         st.markdown("<h5 style='color: #ffffff; margin-top:20px; margin-bottom: 5px; font-weight:600;'>Actividades Adicionales y Observaciones Mecánicas</h5>", unsafe_allow_html=True)
         for idx_num, (index_df, vehicle_row) in enumerate(row_data.iterrows()):
-            # Detalles / Novedades text input
+            # Detalles / Novedades selectbox (allow writing freely)
             current_detalles = vehicle_row.get('Detalles / Novedades', '')
             if current_detalles is None:
                 current_detalles = ""
-            txt_key = f"detalles_txt_mobile_{vehicle_row['Móvil']}_{index_df}"
+            else:
+                current_detalles = str(current_detalles).strip()
+                
+            sb_options = ["", "N/A"]
+            if current_detalles and current_detalles not in sb_options:
+                sb_options.append(current_detalles)
+                
+            try:
+                sb_index = sb_options.index(current_detalles)
+            except ValueError:
+                sb_index = 0
+                
+            sb_key = f"detalles_sb_mobile_{vehicle_row['Móvil']}_{index_df}"
             
-            st.text_input(
+            st.selectbox(
                 f"Actividad mecánica ejecutada #{idx_num + 1}",
-                value=current_detalles,
-                key=txt_key,
-                placeholder="Escribir N/A si no se realiza alguna actividad",
+                options=sb_options,
+                index=sb_index,
+                key=sb_key,
+                accept_new_options=True,
+                placeholder="Escribe la actividad o selecciona...",
                 on_change=MantenimientoService.on_detalles_row_change,
-                args=(index_df, txt_key)
+                args=(index_df, sb_key)
             )
             
             # Observaciones selectbox
@@ -260,7 +274,7 @@ def render_mechanical_form(row, first_idx, row_data):
             
         last_row_obs = str(row_data.iloc[-1].get('Observaciones', '')).strip()
         btn_add_disabled = not last_row_obs
-        if st.button("➕ Agregar otra Actividad Mecánica", key=f"add_row_btn_mobile_mec_{row['Móvil']}", use_container_width=True, disabled=btn_add_disabled):
+        if st.button("Agregar otra Actividad/ Observación", key=f"add_row_btn_mobile_mec_{row['Móvil']}", use_container_width=True, disabled=btn_add_disabled):
             new_df, success, msg = mantenimiento_service.add_mechanical_activity(
                 st.session_state.df_master, row['Móvil'], st.session_state.modified_moviles
             )

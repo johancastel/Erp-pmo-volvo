@@ -49,14 +49,14 @@ def inject_custom_css():
         }
         .volvo-header-left h1 {
             margin: 0;
-            font-size: 26px;
+            font-size: 20px;
             font-weight: 700;
             letter-spacing: 1px;
             color: white !important;
         }
         .volvo-header-left p {
             margin: 5px 0 0 0;
-            font-size: 14px;
+            font-size: 13px;
             color: #a0b2c6;
         }
         .volvo-logo-text {
@@ -89,11 +89,19 @@ def inject_custom_css():
             margin-bottom: 5px;
         }
         .metric-lbl {
-            font-size: 13px;
+            font-size: 18px;
             color: #a0b2c6;
             text-transform: uppercase;
             font-weight: 600;
             letter-spacing: 0.5px;
+        }
+        
+        /* Contenedor de KPIs en cuadrícula responsiva */
+        .kpi-group-container {
+            display: grid;
+            gap: 15px;
+            margin-bottom: 20px;
+            width: 100%;
         }
         
         /* Tarjetas de Patio Interactivas como st.button (Estilo Premium Volvo Oscuro) */
@@ -246,6 +254,32 @@ def inject_custom_css():
             box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
         }
         
+        /* Botón Guardar Cambios en Verde Premium */
+        div[class*="st-key-btn_save_changes"] div.stButton > button,
+        div[class*="st-key-btn_save_corrections"] div.stButton > button {
+            background-color: #1b8a5a !important;
+            border-color: #1b8a5a !important;
+            color: white !important;
+        }
+        div[class*="st-key-btn_save_changes"] div.stButton > button:hover,
+        div[class*="st-key-btn_save_corrections"] div.stButton > button:hover {
+            background-color: #146c43 !important;
+            border-color: #146c43 !important;
+            box-shadow: 0 6px 12px rgba(27, 138, 90, 0.4) !important;
+        }
+        
+        /* Botones de Agregar otra Actividad en Naranja Muted */
+        div[class*="st-key-add_row_btn_"] div.stButton > button {
+            background-color: #d27218 !important;
+            border-color: #d27218 !important;
+            color: white !important;
+        }
+        div[class*="st-key-add_row_btn_"] div.stButton > button:hover {
+            background-color: #b35d10 !important;
+            border-color: #b35d10 !important;
+            box-shadow: 0 6px 12px rgba(210, 114, 24, 0.4) !important;
+        }
+        
         /* Botón de retroceso */
         .back-btn-container div.stButton > button:first-child {
             background-color: transparent !important;
@@ -271,6 +305,41 @@ def inject_custom_css():
         
         /* Ocultar / Mostrar vistas según tamaño de pantalla */
         @media (max-width: 768px) {
+            .volvo-header {
+                padding: 15px 20px !important;
+                margin-bottom: 15px !important;
+            }
+            .volvo-header-left h1 {
+                font-size: 15px !important;
+            }
+            .volvo-header-left p {
+                font-size: 11px !important;
+            }
+            .kpi-group-container {
+                grid-template-columns: repeat(2, 1fr) !important;
+                gap: 8px !important;
+            }
+            .kpi-group-container .metric-card {
+                padding: 8px 5px !important;
+                border-left-width: 3px !important;
+                min-height: 70px !important;
+                display: flex !important;
+                flex-direction: column !important;
+                justify-content: center !important;
+                align-items: center !important;
+                overflow: hidden !important;
+            }
+            .kpi-group-container .metric-val {
+                font-size: 20px !important;
+                margin-bottom: 2px !important;
+                word-break: break-word !important;
+                line-height: 1.2 !important;
+            }
+            .kpi-group-container .metric-lbl {
+                font-size: 15px !important;
+                letter-spacing: 0px !important;
+                line-height: 1.1 !important;
+            }
             div[class*="st-key-desktop_only_container"],
             div[class*="st-key-desktop_only_rows_container"],
             div[class*="st-key-desktop_only_pagination"] {
@@ -319,25 +388,53 @@ def inject_custom_css():
             overflow-x: auto !important;
         }
         
-        /* Contorno destacado y claro para el selector de móviles */
-        div[class*="st-key-atender_form_container"] div[data-baseweb="select"] {
-            border: 2px solid #a0b2c6 !important;
-            border-radius: 4px !important;
-            box-shadow: 0 0 8px rgba(160, 178, 198, 0.25) !important;
+        /* Contorno azul claro destacado para todas las casillas de respuesta (select e input) */
+        div[data-baseweb="select"],
+        div[data-baseweb="input"] {
+            border: 2px solid #5ea2d6 !important;
+            border-radius: 6px !important;
+            box-shadow: 0 0 6px rgba(94, 162, 214, 0.15) !important;
+            transition: all 0.2s ease-in-out !important;
+            background-color: #121c2c !important; /* Ligeramente más oscuro que el fondo del contenedor */
         }
-        div[class*="st-key-atender_form_container"] div[data-baseweb="select"]:hover {
-            border-color: #ffffff !important;
+        div[data-baseweb="select"]:hover,
+        div[data-baseweb="input"]:hover {
+            border-color: #007ac5 !important;
+            box-shadow: 0 0 10px rgba(0, 122, 197, 0.35) !important;
+        }
+        div[data-baseweb="select"]:focus-within,
+        div[data-baseweb="input"]:focus-within {
+            border-color: #0090e7 !important;
+            box-shadow: 0 0 14px rgba(0, 144, 231, 0.5) !important;
         }
         
-        /* Contorno azul destacado para el cuadro de entrada de texto de insumos */
+        /* Contorno destacado y claro para el selector de móviles en atención */
+        div[class*="st-key-atender_form_container"] div[data-baseweb="select"] {
+            border: 2px solid #5ea2d6 !important;
+            border-radius: 6px !important;
+            box-shadow: 0 0 8px rgba(94, 162, 214, 0.25) !important;
+        }
+        div[class*="st-key-atender_form_container"] div[data-baseweb="select"]:hover {
+            border-color: #007ac5 !important;
+        }
+        
+        /* Contorno azul destacado para el cuadro de entrada de texto de insumos en atención */
         div[class*="st-key-atender_form_container"] div[data-testid="stTextInput"] div[data-baseweb="input"] {
-            border: 2px solid #007ac5 !important;
-            border-radius: 4px !important;
-            box-shadow: 0 0 8px rgba(0, 122, 197, 0.25) !important;
+            border: 2px solid #5ea2d6 !important;
+            border-radius: 6px !important;
+            box-shadow: 0 0 8px rgba(94, 162, 214, 0.25) !important;
         }
         div[class*="st-key-atender_form_container"] div[data-testid="stTextInput"] div[data-baseweb="input"]:focus-within {
             border-color: #0090e7 !important;
             box-shadow: 0 0 12px rgba(0, 144, 231, 0.4) !important;
+        }
+        
+        /* Hacer los títulos de las respuestas (labels de los widgets) 3 unidades más grandes */
+        div[data-testid="stAppViewContainer"] [data-testid="stWidgetLabel"] p,
+        div[data-testid="stAppViewContainer"] [data-testid="stWidgetLabel"] {
+            font-size: 17px !important;
+            font-weight: 600 !important;
+            color: #ffffff !important;
         }
         
         /* Evitar que los elementos se desvanezcan o cambien de opacidad al interactuar o recargar */
@@ -417,16 +514,13 @@ def inject_custom_css():
     css = css.replace("{logo_base64}", logo_base64)
     st.markdown(css, unsafe_allow_html=True)
 
-def draw_volvo_header(title, subtitle, version="VERSION 1.1"):
+def draw_volvo_header(title, subtitle, version=None):
     """Dibuja el banner superior corporativo."""
     header_html = f"""
     <div class="volvo-header">
         <div class="volvo-header-left">
             <h1>{title}</h1>
             <p>{subtitle}</p>
-        </div>
-        <div style="font-size: 14px; text-align: right;">
-            <span style="background-color:#004b87; padding:5px 10px; border-radius:15px; font-weight:600; font-size:12px;">{version}</span>
         </div>
     </div>
     """
@@ -467,3 +561,28 @@ def draw_total_fleet_card_html(total_count):
         <p style="margin: 8px 0 0 0; font-size: 15px; color: #a0b2c6; font-weight: bold;">🚛 {total_count} Móviles</p>
     </div>
     """
+
+def draw_kpi_group(kpis):
+    """
+    Dibuja un grupo de tarjetas de métricas en una cuadrícula CSS Grid responsive.
+    Evita el colapso vertical en celular mostrando un diseño 2x2.
+    """
+    import streamlit as st
+    num_kpis = len(kpis)
+    cards_html = []
+    for kpi in kpis:
+        val = kpi.get("val", "")
+        lbl = kpi.get("lbl", "")
+        border_color = kpi.get("border_color", "#005b94")
+        text_color = kpi.get("text_color", None)
+        value_style = kpi.get("value_style", "")
+        
+        border_style = f"border-left-color: {border_color};" if border_color else ""
+        val_color = f"color: {text_color};" if text_color else ""
+        val_styles = f"style='{val_color} {value_style if value_style else ''}'"
+        
+        card_html = f'<div class="metric-card" style="{border_style}"><div class="metric-val" {val_styles}>{val}</div><div class="metric-lbl">{lbl}</div></div>'
+        cards_html.append(card_html)
+        
+    group_html = f'<div class="kpi-group-container" style="grid-template-columns: repeat({num_kpis}, 1fr);">{"".join(cards_html)}</div>'
+    st.markdown(group_html, unsafe_allow_html=True)

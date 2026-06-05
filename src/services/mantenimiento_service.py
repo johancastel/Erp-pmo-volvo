@@ -426,3 +426,41 @@ class MantenimientoService:
         movil_id = st.session_state.df_master.at[index_df, 'Móvil']
         st.session_state.modified_moviles.add(movil_id)
 
+    @staticmethod
+    def on_detalles_sb_change(index_df, sb_key, txt_key):
+        """
+        Callback triggered when the activity/details selectbox value changes.
+        """
+        new_val = st.session_state[sb_key]
+        if new_val in ["", "N/A"]:
+            st.session_state.df_master.at[index_df, 'Detalles / Novedades'] = new_val
+            if txt_key in st.session_state:
+                st.session_state[txt_key] = ""
+        else:
+            curr_val = st.session_state.df_master.at[index_df, 'Detalles / Novedades']
+            if curr_val in ["", "N/A"]:
+                st.session_state.df_master.at[index_df, 'Detalles / Novedades'] = ""
+                if txt_key in st.session_state:
+                    st.session_state[txt_key] = ""
+        movil_id = st.session_state.df_master.at[index_df, 'Móvil']
+        st.session_state.modified_moviles.add(movil_id)
+
+    @staticmethod
+    def on_detalles_elec_sb_change(index_df, sb_key, txt_key):
+        """
+        Callback triggered when the electrical activity/details selectbox value changes.
+        """
+        new_val = st.session_state[sb_key]
+        if new_val in ["", "N/A"]:
+            st.session_state.df_master.at[index_df, 'Detalles Eléctrico'] = new_val
+            if txt_key in st.session_state:
+                st.session_state[txt_key] = ""
+        else:
+            curr_val = st.session_state.df_master.at[index_df, 'Detalles Eléctrico']
+            if curr_val in ["", "N/A"]:
+                st.session_state.df_master.at[index_df, 'Detalles Eléctrico'] = ""
+                if txt_key in st.session_state:
+                    st.session_state[txt_key] = ""
+        movil_id = st.session_state.df_master.at[index_df, 'Móvil']
+        st.session_state.modified_moviles.add(movil_id)
+

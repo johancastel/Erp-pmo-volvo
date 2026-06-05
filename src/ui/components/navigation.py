@@ -116,5 +116,13 @@ def render_sidebar(connection_manager):
                 
                 st.info("🔌 Desconectado de MySQL. Usando base de datos SQLite interna de respaldo.")
                 st.rerun()
+                
+            # Display active database feedback inside the sidebar configuration expander
+            db_active_val = st.session_state.get("db_active", "SQLite")
+            st.write("---")
+            if db_active_val == "MySQL":
+                st.success(f"🟢 **Base de Datos Activa:** MySQL Local en `{st.session_state.db_host}:{st.session_state.db_port}` (DB: `{st.session_state.db_name}`). Datos listos para reportes de BI.")
+            else:
+                st.warning("⚠️ **Base de Datos Activa:** SQLite Local (Archivo `erp_pmo.db`). No se detectó MySQL activo en localhost:3306. Usando base de datos interna de respaldo.")
                     
         return menu_actual

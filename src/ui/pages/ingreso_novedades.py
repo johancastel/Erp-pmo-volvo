@@ -4,7 +4,7 @@ import pandas as pd
 import streamlit as st
 from src.config.settings import PATIOS_CONFIG
 from src.constants.choices import TECNICOS_OPCIONES
-from src.styles import draw_metric_card
+from src.styles import draw_metric_card, draw_kpi_group
 from src.database.repositories.novedades_repository import NovedadesRepository
 from src.services.validation_service import ValidationService
 from src.services.cache_service import CacheService
@@ -22,12 +22,12 @@ def render_maintenance_form(row, first_idx, row_data, current_tipo):
     mantenimiento_service = MantenimientoService()
     
     if current_tipo == "CORRECTIVO":
-        tipo_label = "Mantenimiento Correctivo"
+        tipo_label = "MANTENIMIENTO CORRECTIVO"
         header_title = "Actividades a Realizar y Observaciones"
         input_label_prefix = "Actividad a realizar"
         input_placeholder = "Escribe la actividad a realizar..."
     else:
-        tipo_label = "Mantenimiento Preventivo"
+        tipo_label = "MANTENIMIENTO PREVENTIVO"
         header_title = "Actividades Pendientes y Observaciones"
         input_label_prefix = "Actividad pendiente"
         input_placeholder = "Escribe la actividad pendiente..."
@@ -42,15 +42,29 @@ def render_maintenance_form(row, first_idx, row_data, current_tipo):
             current_detalles = vehicle_row.get('Detalles / Novedades', '')
             if current_detalles is None:
                 current_detalles = ""
-            txt_key = f"detalles_txt_maint_{vehicle_row['Móvil']}_{index_df}"
+            else:
+                current_detalles = str(current_detalles).strip()
+                
+            sb_options = ["", "N/A"]
+            if current_detalles and current_detalles not in sb_options:
+                sb_options.append(current_detalles)
+                
+            try:
+                sb_index = sb_options.index(current_detalles)
+            except ValueError:
+                sb_index = 0
+                
+            sb_key = f"detalles_sb_maint_{vehicle_row['Móvil']}_{index_df}"
             
-            st.text_input(
+            st.selectbox(
                 f"{input_label_prefix} #{idx_num + 1} *",
-                value=current_detalles,
-                key=txt_key,
+                options=sb_options,
+                index=sb_index,
+                key=sb_key,
+                accept_new_options=True,
                 placeholder=input_placeholder,
                 on_change=MantenimientoService.on_detalles_row_change,
-                args=(index_df, txt_key)
+                args=(index_df, sb_key)
             )
             
             # Observaciones
@@ -104,7 +118,7 @@ def render_maintenance_form(row, first_idx, row_data, current_tipo):
             
         last_row_obs = str(row_data.iloc[-1].get('Observaciones', '')).strip()
         btn_add_disabled = not last_row_obs
-        if st.button("➕ Agregar otra Actividad", key=f"add_row_btn_maint_{row['Móvil']}", use_container_width=True, disabled=btn_add_disabled):
+        if st.button("Agregar otra Actividad/ Observación", key=f"add_row_btn_maint_{row['Móvil']}", use_container_width=True, disabled=btn_add_disabled):
             new_df, success, msg = mantenimiento_service.add_mechanical_activity(
                 st.session_state.df_master, row['Móvil'], st.session_state.modified_moviles
             )
@@ -124,7 +138,7 @@ def render_ingreso_novedades_page():
 
     if st.session_state.active_patio is None:
         st.subheader("Centro de Operaciones")
-        st.write("Selecciona el patio a gestionar y registrar novedades:")
+        st.write("Selecciona el patio a registrar novedades:")
         
         patios_list = [
             (patio_name, len(PATIOS_CONFIG[patio_name]))
@@ -188,7 +202,14 @@ def render_ingreso_novedades_page():
     # Validate technician identity registration
     if not st.session_state.get('tecnico_name', '').strip():
         st.write("")
-        st.warning("⚠️ **Identificación Requerida:** Para poder gestionar y editar los datos del taller, debes registrar tu nombre como Técnico Responsable.")
+        
+        # Clear warning flag immediately if a technician is selected in the selectbox
+        if st.session_state.get('temp_tecnico_selectbox'):
+            st.session_state.show_tech_warning = False
+            
+        # Show warning only if user attempted to enter without selecting technician
+        if st.session_state.get('show_tech_warning', False):
+            st.warning("⚠️ **Identificación Requerida:** Para poder gestionar y editar los datos del Patio, debes registrar tu nombre como Técnico Responsable.")
         
         st.markdown("""
         <div style="background-color: #152232; padding: 22px; border-radius: 8px; border-left: 5px solid #f0ad4e; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);">
@@ -210,9 +231,11 @@ def render_ingreso_novedades_page():
             if st.button("Ingresar", use_container_width=True):
                 if tecnico_input:
                     st.session_state.tecnico_name = tecnico_input
+                    st.session_state.show_tech_warning = False
                     st.rerun()
                 else:
-                    st.error("Por favor, selecciona tu nombre antes de ingresar.")
+                    st.session_state.show_tech_warning = True
+                    st.rerun()
         return
 
     # Load active patio data
@@ -346,16 +369,6 @@ def render_ingreso_novedades_page():
     else:
         lbl_tecnico = "Sin reportes recientes"
         
-    kpi1, kpi2, kpi3, kpi4 = st.columns(4)
-    with kpi1:
-        draw_metric_card(f"{alistados_count} de {total_unique_vehicles}", "Móviles Alistados", border_color="#005b94")
-    with kpi2:
-        draw_metric_card(con_fugas, "Con Fugas Reportadas", border_color="#d9534f", text_color="#d9534f")
-    with kpi3:
-        draw_metric_card(sin_fugas, "Flota Sin Fugas", border_color="#5cb85c", text_color="#5cb85c")
-    with kpi4:
-        draw_metric_card(lbl_tecnico, "Último Reporte en Patio", border_color="#f0ad4e", text_color="#f0ad4e", value_style="font-size:14px; padding: 11px 0;")
-
     st.write("---")
     
     # Mode selection buttons (Alistamiento vs Mantenimiento Correctivo vs Mantenimiento Preventivo)
@@ -369,7 +382,7 @@ def render_ingreso_novedades_page():
             is_sel = st.session_state.active_tipo_novedad == "ALISTAMIENTO"
             key_ali = f"btn_tipo_alistamiento{'_selected' if is_sel else ''}"
             if st.button(
-                "Alistamiento", 
+                "ALISTAMIENTO", 
                 key=key_ali, 
                 use_container_width=True
             ):
@@ -380,7 +393,7 @@ def render_ingreso_novedades_page():
             is_sel = st.session_state.active_tipo_novedad == "CORRECTIVO"
             key_corr = f"btn_tipo_correctivo{'_selected' if is_sel else ''}"
             if st.button(
-                "Mantenimiento\nCorrectivo", 
+                "MANTENIMIENTO\nCORRECTIVO", 
                 key=key_corr, 
                 use_container_width=True
             ):
@@ -391,7 +404,7 @@ def render_ingreso_novedades_page():
             is_sel = st.session_state.active_tipo_novedad == "PREVENTIVO"
             key_prev = f"btn_tipo_preventivo{'_selected' if is_sel else ''}"
             if st.button(
-                "Mantenimiento\nPreventivo", 
+                "MANTENIMIENTO\nPREVENTIVO", 
                 key=key_prev, 
                 use_container_width=True
             ):
@@ -402,9 +415,9 @@ def render_ingreso_novedades_page():
         # Show chosen mode header without duplicate change button
         active_mode = st.session_state.active_tipo_novedad
         tipo_label = {
-            "ALISTAMIENTO": "Alistamiento",
-            "CORRECTIVO": "Mantenimiento Correctivo",
-            "PREVENTIVO": "Mantenimiento Preventivo"
+            "ALISTAMIENTO": "ALISTAMIENTO",
+            "CORRECTIVO": "MANTENIMIENTO CORRECTIVO",
+            "PREVENTIVO": "MANTENIMIENTO PREVENTIVO"
         }.get(active_mode, "")
         
         st.markdown(f"<h3 style='color: #ffffff; margin-top: 5px; margin-bottom: 10px; font-size: 20px; font-weight: 700;'>{tipo_label}</h3>", unsafe_allow_html=True)
@@ -436,6 +449,7 @@ def render_ingreso_novedades_page():
             CacheService.clear_checklist_widget_state()
             
         # 1. Verification of Search Query (Móvil)
+        show_save_section = False
         if search_query:
             # 2. Form Checklist Container (Shown if search_query is active, visible on both desktop & mobile)
             row_data = st.session_state.df_master[
@@ -444,6 +458,17 @@ def render_ingreso_novedades_page():
             ]
             
             if row_data is not None and not row_data.empty:
+                show_save_section = True
+                
+                # Render patio KPIs above the form
+                draw_kpi_group([
+                    {"val": f"{alistados_count} de {total_unique_vehicles}", "lbl": "Móviles Alistados", "border_color": "#005b94"},
+                    {"val": con_fugas, "lbl": "Con Fugas", "border_color": "#d9534f", "text_color": "#d9534f"},
+                    {"val": sin_fugas, "lbl": "Flota Sin Fugas", "border_color": "#5cb85c", "text_color": "#5cb85c"},
+                    {"val": lbl_tecnico, "lbl": "Último Reporte", "border_color": "#f0ad4e", "text_color": "#f0ad4e", "value_style": "font-size:14px; padding: 11px 0;"}
+                ])
+                st.write("")
+                
                 first_idx = row_data.index[0]
                 
                 # Sync row's Tipo Novedad with currently selected global active_tipo_novedad for all pending rows of this vehicle
@@ -469,66 +494,67 @@ def render_ingreso_novedades_page():
         st.write("")
                     
         # SAVE ACTION SECTION
-        st.write("---")
-        col_btn, col_info = st.columns([1, 1])
-        with col_btn:
-            btn_guardar = st.button(" Guardar Cambios del Patio", key="btn_save_changes", use_container_width=True)
-            
-        with col_info:
-            num_modificados = len(st.session_state.modified_moviles)
-            if num_modificados > 0:
-                st.warning(f"⚠️ {num_modificados} móvil(es) modificado(s) sin guardar.")
-            else:
-                st.info("ℹ️ No hay cambios pendientes por guardar.")
+        if show_save_section:
+            st.write("---")
+            col_btn, col_info = st.columns([1, 1])
+            with col_btn:
+                btn_guardar = st.button(" Guardar Cambios del Patio", key="btn_save_changes", use_container_width=True)
                 
-        if btn_guardar:
-            tecnico_name_val = st.session_state.get('tecnico_name', '').strip()
-            if not tecnico_name_val:
-                st.error("⚠️ **Error:** Debes ingresar tu **Nombre de Técnico Responsable** para poder guardar los cambios.")
-            else:
-                mobiles_to_validate = []
-                if search_query:
-                    mobiles_to_validate = [search_query]
+            with col_info:
+                num_modificados = len(st.session_state.modified_moviles)
+                if num_modificados > 0:
+                    st.warning(f"⚠️ {num_modificados} móvil(es) modificado(s) sin guardar.")
                 else:
-                    mobiles_to_validate = list(st.session_state.modified_moviles)
-                
-                # Run checklists validations
-                incomplete_mobiles = []
-                for movil_id in mobiles_to_validate:
-                    if not ValidationService.check_checklist_filled(st.session_state.df_master, movil_id):
-                        incomplete_mobiles.append(movil_id)
-                
-                if incomplete_mobiles:
-                    if st.session_state.active_tipo_novedad in ['CORRECTIVO', 'PREVENTIVO']:
-                        st.error(f"**Error al guardar:** Para el móvil {', '.join(incomplete_mobiles)}, debes describir las actividades ejecutadas y seleccionar una Observación.")
-                    else:
-                        st.error(f"**Error al guardar:** Para el móvil {', '.join(incomplete_mobiles)}, debes completar la lista de chequeo (asegúrate de ingresar cantidades numéricas válidas para los fluidos marcados como SI), ingresar las Actividades ejecutadas y seleccionar una Observación.")
+                    st.info("ℹ️ No hay cambios pendientes por guardar.")
+                    
+            if btn_guardar:
+                tecnico_name_val = st.session_state.get('tecnico_name', '').strip()
+                if not tecnico_name_val:
+                    st.error("⚠️ **Error:** Debes ingresar tu **Nombre de Técnico Responsable** para poder guardar los cambios.")
                 else:
-                    if num_modificados > 0:
-                        with st.spinner("Guardando cambios en la base de datos..."):
-                            try:
-                                updated_count = repository.save_patio_changes_custom(
-                                    modified_moviles=st.session_state.modified_moviles,
-                                    df_master=st.session_state.df_master,
-                                    tecnico_name=tecnico_name_val,
-                                    patio_name=patio,
-                                    host=st.session_state.db_host,
-                                    user=st.session_state.db_user,
-                                    password=st.session_state.db_password,
-                                    db_name=st.session_state.db_name,
-                                    port=st.session_state.db_port
-                                )
-                                # Reset modifications and master
-                                st.session_state.modified_moviles = set()
-                                if 'df_master' in st.session_state:
-                                    del st.session_state.df_master
-                                CacheService.clear_checklist_widget_state()
-                                st.session_state.clear_search_on_next_run = True
-                                st.success(f"✅ ¡Guardado exitoso! Se actualizaron {updated_count} móvil(es) en {patio} ({st.session_state.db_active}).")
-                                st.rerun()
-                            except Exception as ex:
-                                st.error(f"Error al guardar datos: {str(ex)}")
+                    mobiles_to_validate = []
+                    if search_query:
+                        mobiles_to_validate = [search_query]
                     else:
-                        st.session_state.clear_search_on_next_run = True
-                        st.info("ℹ️ No se detectaron cambios nuevos para guardar.")
-                        st.rerun()
+                        mobiles_to_validate = list(st.session_state.modified_moviles)
+                    
+                    # Run checklists validations
+                    incomplete_mobiles = []
+                    for movil_id in mobiles_to_validate:
+                        if not ValidationService.check_checklist_filled(st.session_state.df_master, movil_id):
+                            incomplete_mobiles.append(movil_id)
+                    
+                    if incomplete_mobiles:
+                        if st.session_state.active_tipo_novedad in ['CORRECTIVO', 'PREVENTIVO']:
+                            st.error(f"**Error al guardar:** Para el móvil {', '.join(incomplete_mobiles)}, debes describir las actividades ejecutadas y seleccionar una Observación.")
+                        else:
+                            st.error(f"**Error al guardar:** Para el móvil {', '.join(incomplete_mobiles)}, debes completar la lista de chequeo (asegúrate de ingresar cantidades numéricas válidas para los fluidos marcados como SI), ingresar las Actividades ejecutadas y seleccionar una Observación.")
+                    else:
+                        if num_modificados > 0:
+                            with st.spinner("Guardando cambios en la base de datos..."):
+                                try:
+                                    updated_count = repository.save_patio_changes_custom(
+                                        modified_moviles=st.session_state.modified_moviles,
+                                        df_master=st.session_state.df_master,
+                                        tecnico_name=tecnico_name_val,
+                                        patio_name=patio,
+                                        host=st.session_state.db_host,
+                                        user=st.session_state.db_user,
+                                        password=st.session_state.db_password,
+                                        db_name=st.session_state.db_name,
+                                        port=st.session_state.db_port
+                                    )
+                                    # Reset modifications and master
+                                    st.session_state.modified_moviles = set()
+                                    if 'df_master' in st.session_state:
+                                        del st.session_state.df_master
+                                    CacheService.clear_checklist_widget_state()
+                                    st.session_state.clear_search_on_next_run = True
+                                    st.success(f"✅ ¡Guardado exitoso! Se actualizaron {updated_count} móvil(es) en {patio} ({st.session_state.db_active}).")
+                                    st.rerun()
+                                except Exception as ex:
+                                    st.error(f"Error al guardar datos: {str(ex)}")
+                        else:
+                            st.session_state.clear_search_on_next_run = True
+                            st.info("ℹ️ No se detectaron cambios nuevos para guardar.")
+                            st.rerun()
