@@ -184,6 +184,11 @@ def render_ingreso_novedades_page():
             st.session_state.active_tipo_novedad = None
             st.session_state.clear_search_on_next_run = True
             st.rerun()
+    elif st.session_state.get('tecnico_name', '').strip():
+        if st.button("Volver"):
+            if 'tecnico_name' in st.session_state:
+                del st.session_state.tecnico_name
+            st.rerun()
     else:
         if st.button("Volver"):
             st.session_state.active_patio = None
@@ -369,7 +374,7 @@ def render_ingreso_novedades_page():
     else:
         lbl_tecnico = "Sin reportes recientes"
         
-    st.write("---")
+    st.write("")
     
     # Mode selection buttons (Alistamiento vs Mantenimiento Correctivo vs Mantenimiento Preventivo)
     if 'active_tipo_novedad' not in st.session_state:
@@ -420,8 +425,7 @@ def render_ingreso_novedades_page():
             "PREVENTIVO": "MANTENIMIENTO PREVENTIVO"
         }.get(active_mode, "")
         
-        st.markdown(f"<h3 style='color: #ffffff; margin-top: 5px; margin-bottom: 10px; font-size: 20px; font-weight: 700;'>{tipo_label}</h3>", unsafe_allow_html=True)
-        st.write("---")
+        st.markdown(f"<h3 style='color: #00e1d9; text-align: center; margin-top: 10px; margin-bottom: 15px; font-size: 22px; font-weight: 700;'>{tipo_label}</h3>", unsafe_allow_html=True)
 
     if st.session_state.active_tipo_novedad is not None:
         if st.session_state.get('clear_search_on_next_run'):
