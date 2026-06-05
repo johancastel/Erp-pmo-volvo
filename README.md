@@ -130,3 +130,5 @@ La terminal desplegará los enlaces locales para ver el aplicativo:
 
 ## 🔒 Privacidad y Soporte
 Este sistema es propiedad exclusiva de **Volvo Group Colombia**. El acceso y modificación de datos de la flota está restringido a personal técnico autorizado y auditores PMO de patio.
+
+Versión 0.1 - Junio 2026
